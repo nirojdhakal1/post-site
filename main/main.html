@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Anonymous</title>
+    <link rel="stylesheet" href="main.css">
+  </head>
+  <body>
+    <div class="title-container">
+        <h1>Anonymous</h1>
+      </div>
+      
+    
+    <div id="main-container">
+        <div id="form-container">
+          <h2>Post a message</h2>
+          <form>
+            <textarea id="post" name="post" rows="4" cols="50"></textarea>
+            <button type="submit">Submit</button>
+          </form>
+        </div>
+  
+        <div id="posts-container"></div>
+    </div>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.7.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.7.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.7.1/firebase-database.js"></script>
+    <script>
+     // Initialize Firebase
+var firebaseConfig = {
+    apiKey: "AIzaSyCjJJgB1Dbnm4F3PMEaXP98ztZ1yxiKsmQ",
+    authDomain: "cosmic-strategy-375907.firebaseapp.com",
+    databaseURL: "https://cosmic-strategy-375907-default-rtdb.firebaseio.com",
+    projectId: "cosmic-strategy-375907",
+    storageBucket: "cosmic-strategy-375907.appspot.com",
+    messagingSenderId: "775036199233",
+    appId: "1:775036199233:web:5b3e1571812e2188e381c0",
+    measurementId: "G-QLW3GW52VX"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+// Get a reference to the Firebase Realtime Database
+var database = firebase.database();
+
+// Listen for form submission
+document.querySelector('form').addEventListener('submit', function(event) {
+event.preventDefault();
+
+// Get the user's post
+var post = document.getElementById('post').value;
+
+// Get the user's ID
+var user = firebase.auth().currentUser;
+
+// Save the post and user ID to the database
+var newPostRef = database.ref('posts').push();
+newPostRef.set({
+userId: user.uid,
+post: post
+});
+
+// Clear the form
+document.getElementById('post').value = '';
+});
+
+// Listen for changes to the database and display the posts
+var postsRef = database.ref('posts');
+postsRef.on('child_added', function(data) {
+var post = data.val().post;
+var userId = data.val().userId;
+var postElement = document.createElement('p');
+
+// Add class based on whether the post is from the user or others
+if (userId === firebase.auth().currentUser.uid) {
+postElement.classList.add('own-post'); // Use own-post class for user's post
+postElement.innerHTML = "<strong>Your post:</strong> " + post;
+document.getElementById('posts-container').prepend(postElement); // Add user's post to the top
+} else {
+postElement.classList.add('other-post');
+postElement.textContent = post;
+document.getElementById('posts-container').appendChild(postElement);
+}
+});
+
+
+    </script>
+  </body>
+</html>
