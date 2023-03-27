@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Anonymous</title>
+    <link rel="stylesheet" href="main.css">
+   
+  </head>
+  <body>
+    <div class="title-container">
+        <h1>Anonymous</h1>
+      </div>
+      
+    
+    <div id="main-container">
+        <div id="form-container">
+          <h2>Post a message</h2>
+          <form>
+            <textarea id="post" name="post" rows="4" cols="50"></textarea>
+            <label for="image" class="custom-file-upload">Choose Image</label>
+            <input type="file" id="image" name="image" accept="image/*">
+
+            <button type="submit">Submit</button>
+          </form>
+        </div>
+  
+        <div id="posts-container"></div>
+        
+    </div>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.7.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.7.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.7.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.7.1/firebase-storage.js"></script>
+    <script>
+     // Initialize Firebase
+var firebaseConfig = {
+    apiKey: "AIzaSyCjJJgB1Dbnm4F3PMEaXP98ztZ1yxiKsmQ",
+    authDomain: "cosmic-strategy-375907.firebaseapp.com",
+    databaseURL: "https://cosmic-strategy-375907-default-rtdb.firebaseio.com",
+    projectId: "cosmic-strategy-375907",
+    storageBucket: "cosmic-strategy-375907.appspot.com",
+    messagingSenderId: "775036199233",
+    appId: "1:775036199233:web:5b3e1571812e2188e381c0",
+    measurementId: "G-QLW3GW52VX"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+// Get a reference to the Firebase Realtime Database
+var database = firebase.database();
+
+
+
+// Listen for form submission
+document.querySelector('form').addEventListener('submit', function(event) {
+  event.preventDefault();
+
+  // Get the user's post and image file
+  var post = document.getElementById('post').value.trim();
+  var imageFile = document.getElementById('image').files[0];
+
+  // Get the user's ID
+  var user = firebase.auth().currentUser;
+
+  // Set image URL to null if no image has been uploaded
+  var imageUrl = null;
+
+  // If the user has entered text or uploaded an image, save the post to the database
+  if (post || imageFile) {
+    // Create a new Firebase Storage reference for the image if an image has been uploaded
+    if (imageFile) {
+      var storageRef = firebase.storage().ref().child('images/' + imageFile.name);
+
+      // Upload the image to Firebase Storage
+      storageRef.put(imageFile).then(function(snapshot) {
+        // Get the download URL of the image
+        storageRef.getDownloadURL().then(function(downloadURL) {
+          // Save the post, image URL, and user ID to the database
+          var newPostRef = database.ref('posts').push();
+          newPostRef.set({
+            userId: user.uid,
+            post: post,
+            imageUrl: downloadURL
+          });
+        });
+      });
+    } else {
+      // Save the post and user ID to the database if no image has been uploaded
+      var newPostRef = database.ref('posts').push();
+      newPostRef.set({
+        userId: user.uid,
+        post: post,
+        imageUrl: null
+      });
+    }
+
+    // Clear the form
+    document.getElementById('post').value = '';
+    document.getElementById('image').value = '';
+  }
+});
+
+//
+// Listen for changes to the database and display the posts
+var postsRef = database.ref('posts');
+postsRef.on('child_added', function(data) {
+  var post = data.val().post;
+  var userId = data.val().userId;
+  var imageUrl = data.val().imageUrl;
+  var postElement = document.createElement('div');
+
+  // Add class based on whether the post is from the user or others
+  if (userId === firebase.auth().currentUser.uid) {
+    postElement.classList.add('own-post'); // Use own-post class for user's post
+    postElement.innerHTML = "<strong>Your post:</strong> " + post;
+    document.getElementById('posts-container').prepend(postElement); // Add user's post to the top
+  } else {
+    postElement.classList.add('other-post');
+    postElement.textContent = post;
+    document.getElementById('posts-container').appendChild(postElement);
+  }
+
+  // If post has an image, create an img element and append it to the post element
+  if (imageUrl) {
+    var imgElement = document.createElement('img');
+    imgElement.src = imageUrl;
+    postElement.appendChild(imgElement);
+  }
+});
+
+
+
+
+    </script>
+  </body>
+</html>
